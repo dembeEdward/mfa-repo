@@ -1,0 +1,122 @@
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: captureorder-deployment
+spec:
+  selector:
+    matchLabels:
+      app: captureorder
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: captureorder
+    spec:
+      containers:
+      - name: captureorder
+        image: torosent/captureorderack
+        env:
+        - name: MONGOURL
+          value: mongodb://mongodb.mfa-test.svc.cluster.local
+        - name: TEAMNAME
+          value: MFA
+        - name: CHALLENGEAPPINSIGHTS_KEY
+          value: 73f1a101-984f-4e38-b24b-b9e2a7092582
+        - name: AMQPURL
+          value: amqp://user:TtiguKA4Z0@rabbitmq.mfa-test.svc.cluster.local:5672
+        ports:
+        - containerPort: 80
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: captureorder-service
+spec:
+  selector:
+    app: captureorder
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fulfillorderack-deployment
+spec:
+  selector:
+    matchLabels:
+      app: fulfillorderack
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: fulfillorderack
+    spec:
+      containers:
+      - name: fulfillorderack
+        image: torosent/fulfillorderack
+        env:
+        - name: TEAMNAME
+          value: MFA
+        - name: APPINSIGHTS_KEY
+          value: 73f1a101-984f-4e38-b24b-b9e2a7092582
+        - name: CHALLENGEAPPINSIGHTS_KEY
+          value: 73f1a101-984f-4e38-b24b-b9e2a7092582
+        - name: MONGOURL
+          value: mongodb://mongodb.mfa-test.svc.cluster.local
+        ports:
+        - containerPort: 80
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: fulfillorderack-service
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+spec:
+  selector:
+    app: fulfillorderack
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer  
+
+---
+
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: eventlistener-deployment
+spec:
+  selector:
+    matchLabels:
+      app: eventlistener
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: eventlistener
+    spec:
+      containers:
+      - name: eventlistener
+        image: torosent/rabbitmqlistenerack
+        env:
+        - name: PROCESSENDPOINT
+          value: http://fulfillorderack-service/v1/order
+        - name: AMQPURL
+          value: amqp://user:TtiguKA4Z0@rabbitmq.mfa-test.svc.cluster.local:5672
+        - name: TEAMNAME
+          value: MFA
+        - name: CHALLENGEAPPINSIGHTS_KEY
+          value: 73f1a101-984f-4e38-b24b-b9e2a7092582
+        ports:
+        - containerPort: 80
