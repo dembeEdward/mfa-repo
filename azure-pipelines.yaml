@@ -1,4 +1,6 @@
 steps:
+- script: az login
+  displayName: az login -u dembe.tshifaro@gmail.com -p dembeEdward123
 - script: az aks get-credentials -g mfa-aks -n mfa-cluster1
   displayName: Get credential
 - script: kubectl get po
