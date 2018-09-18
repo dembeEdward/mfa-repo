@@ -1,0 +1,5 @@
+steps:
+- script: az aks get-credentials -g mfa-aks -n mfa-cluster1
+  displayName: Get credential
+- script: kubectl get po
+  displayName: List pods
